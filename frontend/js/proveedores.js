@@ -1,11 +1,12 @@
+// proveedores.js — authHeaders() viene de auth.js (cargado antes en el HTML)
 const API = "http://localhost:3000/api/proveedores";
 
 async function cargarProveedores() {
-  const res        = await fetch(API);
+  const res         = await fetch(API, { headers: authHeaders() });
   const proveedores = await res.json();
-  const tbody      = document.getElementById("tabla-proveedores");
+  const tbody       = document.getElementById("tabla-proveedores");
 
-  if (proveedores.length === 0) {
+  if (!proveedores.length) {
     tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No hay proveedores registrados</td></tr>`;
     return;
   }
@@ -42,15 +43,13 @@ async function guardarProveedor() {
   const body = { nombre_proveedor: nombre, telefono: tel, correo_electronico: correo, direccion: dir };
 
   try {
-    const res  = await fetch(id ? `${API}/${id}` : API, {
-      method: id ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
+    const res = await fetch(id ? `${API}/${id}` : API, {
+      method:  id ? "PUT" : "POST",
+      headers: authHeaders(),
+      body:    JSON.stringify(body)
     });
     const data = await res.json();
-
     if (!res.ok) return mostrarMensaje(msgDiv, data.error, "danger");
-
     mostrarMensaje(msgDiv, data.mensaje, "success");
     limpiarFormulario();
     cargarProveedores();
@@ -60,7 +59,7 @@ async function guardarProveedor() {
 }
 
 async function editarProveedor(id) {
-  const res = await fetch(`${API}/${id}`);
+  const res = await fetch(`${API}/${id}`, { headers: authHeaders() });
   const p   = await res.json();
 
   document.getElementById("id_proveedor").value       = p.id_proveedor;
@@ -75,9 +74,8 @@ async function editarProveedor(id) {
 
 async function eliminarProveedor(id) {
   if (!confirm("¿Seguro que deseas eliminar este proveedor? También se eliminarán sus distribuciones.")) return;
-
   try {
-    const res  = await fetch(`${API}/${id}`, { method: "DELETE" });
+    const res  = await fetch(`${API}/${id}`, { method: "DELETE", headers: authHeaders() });
     const data = await res.json();
     alert(data.mensaje || data.error);
     cargarProveedores();
@@ -100,5 +98,4 @@ function mostrarMensaje(div, texto, tipo) {
   div.innerHTML = `<div class="alert alert-${tipo} py-2 mb-0">${texto}</div>`;
 }
 
-// Necesitamos el GET por ID en el backend — agrégalo a routes/proveedores.js
 cargarProveedores();

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Sistema de Gestión</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="../css/styles.css" rel="stylesheet">
+  <style>
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .auth-wrap { width: 100%; max-width: 420px; }
+    .tab-btn {
+      background: none; border: none; color: rgba(255,255,255,.45);
+      font-size: .95rem; padding: .5rem 1.5rem;
+      border-bottom: 2px solid transparent; transition: all .2s;
+    }
+    .tab-btn.active { color: #fff; border-bottom-color: #4facfe; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+  </style>
+</head>
+<body>
+
+<div class="auth-wrap">
+  <div class="card card-menu p-4">
+
+    <div class="text-center mb-4">
+      <i class="bi bi-cpu fs-1 text-info"></i>
+      <h4 class="fw-bold mt-2">Sistema de Gestión</h4>
+    </div>
+
+    <!-- Tabs -->
+    <div class="d-flex justify-content-center mb-4 border-bottom border-secondary pb-1">
+      <button class="tab-btn active" onclick="switchTab('login')">
+        <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar sesión
+      </button>
+      <button class="tab-btn" onclick="switchTab('registro')">
+        <i class="bi bi-person-plus me-1"></i>Registrarse
+      </button>
+    </div>
+
+    <!-- Alerta -->
+    <div id="alerta" class="alert d-none mb-3" role="alert"></div>
+
+    <!-- Panel Login -->
+    <div id="panel-login" class="panel active">
+      <div class="mb-3">
+        <label class="form-label">Usuario</label>
+        <input type="text" id="login-usuario" class="form-control" placeholder="Nombre de usuario"/>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Contraseña</label>
+        <input type="password" id="login-pass" class="form-control" placeholder="••••••••"/>
+      </div>
+      <button class="btn btn-info w-100 fw-semibold" onclick="doLogin()">
+        <i class="bi bi-box-arrow-in-right me-1"></i>Entrar
+      </button>
+    </div>
+
+    <!-- Panel Registro -->
+    <div id="panel-registro" class="panel">
+      <div class="mb-3">
+        <label class="form-label">Usuario</label>
+        <input type="text" id="reg-usuario" class="form-control" placeholder="Elige un nombre"/>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Correo electrónico</label>
+        <input type="email" id="reg-correo" class="form-control" placeholder="correo@ejemplo.com"/>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Contraseña <small class="text-secondary">(mín. 6 caracteres)</small></label>
+        <input type="password" id="reg-pass" class="form-control" placeholder="••••••••"/>
+      </div>
+      <button class="btn btn-success w-100 fw-semibold" onclick="doRegistro()">
+        <i class="bi bi-person-check me-1"></i>Crear cuenta
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const API = "http://localhost:3000/api";
+
+  // Si ya hay sesión activa, ir directo al panel
+  if (localStorage.getItem("token")) window.location.href = "index.html";
+
+  function switchTab(tab) {
+    document.querySelectorAll(".tab-btn").forEach((b, i) =>
+      b.classList.toggle("active", (i === 0) === (tab === "login")));
+    document.getElementById("panel-login").classList.toggle("active", tab === "login");
+    document.getElementById("panel-registro").classList.toggle("active", tab === "registro");
+    ocultarAlerta();
+  }
+
+  function mostrarAlerta(msg, tipo = "danger") {
+    const el = document.getElementById("alerta");
+    el.className = "alert alert-" + tipo;
+    el.textContent = msg;
+    el.classList.remove("d-none");
+  }
+  function ocultarAlerta() {
+    document.getElementById("alerta").classList.add("d-none");
+  }
+
+  async function doLogin() {
+    const NombreUsuario = document.getElementById("login-usuario").value.trim();
+    const Contrasena    = document.getElementById("login-pass").value;
+    if (!NombreUsuario || !Contrasena) return mostrarAlerta("Completa todos los campos.");
+    try {
+      const res  = await fetch(`${API}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ NombreUsuario, Contrasena })
+      });
+      const data = await res.json();
+      if (!res.ok) return mostrarAlerta(data.error);
+      localStorage.setItem("token",   data.token);
+      localStorage.setItem("usuario", JSON.stringify(data.usuario));
+      window.location.href = "index.html";
+    } catch { mostrarAlerta("No se pudo conectar con el servidor."); }
+  }
+
+  async function doRegistro() {
+    const NombreUsuario     = document.getElementById("reg-usuario").value.trim();
+    const CorreoElectronico = document.getElementById("reg-correo").value.trim();
+    const Contrasena        = document.getElementById("reg-pass").value;
+    if (!NombreUsuario || !CorreoElectronico || !Contrasena)
+      return mostrarAlerta("Completa todos los campos.");
+    try {
+      const res  = await fetch(`${API}/auth/registro`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ NombreUsuario, CorreoElectronico, Contrasena })
+      });
+      const data = await res.json();
+      if (!res.ok) return mostrarAlerta(data.error);
+      mostrarAlerta(data.mensaje + " Ahora inicia sesión.", "success");
+      switchTab("login");
+    } catch { mostrarAlerta("No se pudo conectar con el servidor."); }
+  }
+
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Enter") return;
+    const activo = document.querySelector(".panel.active").id;
+    if (activo === "panel-login") doLogin(); else doRegistro();
+  });
+</script>
+</body>
+</html>

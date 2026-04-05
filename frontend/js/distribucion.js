@@ -1,10 +1,14 @@
+// distribucion.js — authHeaders() viene de auth.js (cargado antes en el HTML)
 const API_DIST = "http://localhost:3000/api/distribucion";
 const API_PROD = "http://localhost:3000/api/productos";
 const API_PROV = "http://localhost:3000/api/proveedores";
 
 async function cargarSelectores() {
-  const [resProd, resProv] = await Promise.all([fetch(API_PROD), fetch(API_PROV)]);
-  const productos  = await resProd.json();
+  const [resProd, resProv] = await Promise.all([
+    fetch(API_PROD, { headers: authHeaders() }),
+    fetch(API_PROV, { headers: authHeaders() })
+  ]);
+  const productos   = await resProd.json();
   const proveedores = await resProv.json();
 
   const selProd = document.getElementById("sel_producto");
@@ -18,11 +22,11 @@ async function cargarSelectores() {
 }
 
 async function cargarDistribucion() {
-  const res   = await fetch(API_DIST);
+  const res   = await fetch(API_DIST, { headers: authHeaders() });
   const datos = await res.json();
   const tbody = document.getElementById("tabla-distribucion");
 
-  if (datos.length === 0) {
+  if (!datos.length) {
     tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">No hay distribuciones registradas</td></tr>`;
     return;
   }
@@ -47,20 +51,18 @@ async function asignarDistribucion() {
   const cantidad     = parseInt(document.getElementById("cantidad_suministrada").value);
   const msgDiv       = document.getElementById("msg-distribucion");
 
-  if (!id_producto)            return mostrarMensaje(msgDiv, "Selecciona un producto.", "danger");
-  if (!id_proveedor)           return mostrarMensaje(msgDiv, "Selecciona un proveedor.", "danger");
+  if (!id_producto)              return mostrarMensaje(msgDiv, "Selecciona un producto.", "danger");
+  if (!id_proveedor)             return mostrarMensaje(msgDiv, "Selecciona un proveedor.", "danger");
   if (!cantidad || cantidad < 1) return mostrarMensaje(msgDiv, "La cantidad debe ser mayor a 0.", "danger");
 
   try {
-    const res  = await fetch(API_DIST, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id_producto, id_proveedor, cantidad_suministrada: cantidad })
+    const res = await fetch(API_DIST, {
+      method:  "POST",
+      headers: authHeaders(),
+      body:    JSON.stringify({ id_producto, id_proveedor, cantidad_suministrada: cantidad })
     });
     const data = await res.json();
-
     if (!res.ok) return mostrarMensaje(msgDiv, data.error, "danger");
-
     mostrarMensaje(msgDiv, data.mensaje, "success");
     document.getElementById("cantidad_suministrada").value = "";
     cargarDistribucion();
@@ -71,12 +73,11 @@ async function asignarDistribucion() {
 
 async function eliminarDistribucion(id_producto, id_proveedor) {
   if (!confirm("¿Eliminar esta distribución?")) return;
-
   try {
-    const res  = await fetch(API_DIST, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id_producto, id_proveedor })
+    const res = await fetch(API_DIST, {
+      method:  "DELETE",
+      headers: authHeaders(),
+      body:    JSON.stringify({ id_producto, id_proveedor })
     });
     const data = await res.json();
     alert(data.mensaje || data.error);

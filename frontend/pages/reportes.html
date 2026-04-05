@@ -18,12 +18,16 @@
       <i class="bi bi-graph-up-arrow"></i> Reportes y Consultas
     </span>
     <div class="d-flex gap-2">
-      <a href="http://localhost:3000/api/reportes/exportar-excel" class="btn btn-success btn-sm">
+      <!-- Exportar con token via JS (no <a href> directo) -->
+      <button onclick="exportar('excel')" class="btn btn-success btn-sm">
         <i class="bi bi-file-earmark-excel"></i> Exportar Excel
-      </a>
-      <a href="http://localhost:3000/api/reportes/exportar-pdf" class="btn btn-danger btn-sm">
+      </button>
+      <button onclick="exportar('pdf')" class="btn btn-danger btn-sm">
         <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
-      </a>
+      </button>
+      <button onclick="logout()" class="btn btn-outline-light btn-sm ms-2">
+        <i class="bi bi-box-arrow-right me-1"></i>Salir
+      </button>
     </div>
   </nav>
 
@@ -55,7 +59,7 @@
       </div>
     </div>
 
-    <!-- Por fecha -->
+    <!-- Por fecha (productos ingresados) -->
     <div class="card shadow-sm mb-4">
       <div class="card-header fw-bold">
         <i class="bi bi-calendar-range text-info"></i> Productos por Rango de Fechas
@@ -78,6 +82,38 @@
           <table class="table table-hover mb-0">
             <thead><tr><th>Nombre</th><th>Precio</th><th>Stock</th><th>Fecha Ingreso</th></tr></thead>
             <tbody id="tabla-por-fecha">
+              <tr><td colspan="4" class="text-center text-muted py-3">Selecciona un rango de fechas</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- NUEVO: Salidas por rango de fechas -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header fw-bold">
+        <i class="bi bi-arrow-down-circle-fill text-warning"></i> Salidas por Rango de Fechas
+      </div>
+      <div class="card-body">
+        <div class="d-flex gap-2 align-items-end mb-3 flex-wrap">
+          <div>
+            <label class="form-label">Desde:</label>
+            <input type="date" id="sal_desde" class="form-control">
+          </div>
+          <div>
+            <label class="form-label">Hasta:</label>
+            <input type="date" id="sal_hasta" class="form-control">
+          </div>
+          <button onclick="consultarSalidasFecha()" class="btn btn-warning fw-bold">
+            <i class="bi bi-search"></i> Consultar
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr><th>#</th><th>Producto</th><th>Cantidad</th><th>Fecha Salida</th></tr>
+            </thead>
+            <tbody id="tabla-salidas-fecha">
               <tr><td colspan="4" class="text-center text-muted py-3">Selecciona un rango de fechas</td></tr>
             </tbody>
           </table>
@@ -133,6 +169,63 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="../js/auth.js"></script>
   <script src="../js/reportes.js"></script>
+  <script>
+    requireAuth();
+
+    // Exportar Excel/PDF con token (no se puede usar <a href> directo porque necesita Authorization header)
+    async function exportar(tipo) {
+      const url = `http://localhost:3000/api/reportes/exportar-${tipo}`;
+      try {
+        const res  = await fetch(url, { headers: authHeaders() });
+        const blob = await res.blob();
+        const a    = document.createElement("a");
+        a.href     = URL.createObjectURL(blob);
+        a.download = tipo === "excel"
+          ? `reporte_${new Date().toISOString().slice(0,10)}.xlsx`
+          : `reporte_${new Date().toISOString().slice(0,10)}.pdf`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch {
+        alert("Error al exportar el archivo.");
+      }
+    }
+
+    // Nueva consulta: salidas por rango de fechas
+    async function consultarSalidasFecha() {
+      const desde = document.getElementById("sal_desde").value;
+      const hasta = document.getElementById("sal_hasta").value;
+      const tbody = document.getElementById("tabla-salidas-fecha");
+
+      if (!desde || !hasta) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-3">Selecciona ambas fechas.</td></tr>`;
+        return;
+      }
+
+      try {
+        const res  = await fetch(
+          `http://localhost:3000/api/reportes/salidas-por-fecha?desde=${desde}&hasta=${hasta}`,
+          { headers: authHeaders() }
+        );
+        const data = await res.json();
+
+        if (!Array.isArray(data) || !data.length) {
+          tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">Sin resultados en ese rango.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data.map(s => `
+          <tr>
+            <td>${s.IdSalida}</td>
+            <td>${s.nombre_producto}</td>
+            <td><span class="badge bg-warning text-dark">${s.Cantidad}</span></td>
+            <td>${new Date(s.FechaSalida).toLocaleString("es-GT")}</td>
+          </tr>`).join("");
+      } catch {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-3">Error al consultar.</td></tr>`;
+      }
+    }
+  </script>
 </body>
 </html>

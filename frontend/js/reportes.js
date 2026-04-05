@@ -1,9 +1,10 @@
+// reportes.js — authHeaders() viene de auth.js (cargado antes en el HTML)
 const API_REP = "http://localhost:3000/api/reportes";
 let graficoInstancia = null;
 
 async function consultarStockBajo() {
   const limite = document.getElementById("limite_stock").value || 10;
-  const res    = await fetch(`${API_REP}/stock-bajo?limite=${limite}`);
+  const res    = await fetch(`${API_REP}/stock-bajo?limite=${limite}`, { headers: authHeaders() });
   const datos  = await res.json();
   const tbody  = document.getElementById("tabla-stock-bajo");
 
@@ -19,12 +20,12 @@ async function consultarStockBajo() {
 }
 
 async function consultarPorFecha() {
-  const desde  = document.getElementById("fecha_desde").value;
-  const hasta  = document.getElementById("fecha_hasta").value;
+  const desde = document.getElementById("fecha_desde").value;
+  const hasta = document.getElementById("fecha_hasta").value;
 
   if (!desde || !hasta) return alert("Selecciona ambas fechas.");
 
-  const res   = await fetch(`${API_REP}/por-fecha?desde=${desde}&hasta=${hasta}`);
+  const res   = await fetch(`${API_REP}/por-fecha?desde=${desde}&hasta=${hasta}`, { headers: authHeaders() });
   const datos = await res.json();
   const tbody = document.getElementById("tabla-por-fecha");
 
@@ -39,8 +40,30 @@ async function consultarPorFecha() {
         </tr>`).join("");
 }
 
+// NUEVO: Salidas por rango de fechas (Módulo 8)
+async function consultarSalidasFecha() {
+  const desde = document.getElementById("sal_desde").value;
+  const hasta = document.getElementById("sal_hasta").value;
+  const tbody = document.getElementById("tabla-salidas-fecha");
+
+  if (!desde || !hasta) return alert("Selecciona ambas fechas.");
+
+  const res   = await fetch(`${API_REP}/salidas-por-fecha?desde=${desde}&hasta=${hasta}`, { headers: authHeaders() });
+  const datos = await res.json();
+
+  tbody.innerHTML = !Array.isArray(datos) || datos.length === 0
+    ? `<tr><td colspan="4" class="text-center text-muted">Sin resultados en ese rango</td></tr>`
+    : datos.map(s => `
+        <tr>
+          <td>${s.IdSalida}</td>
+          <td>${s.nombre_producto}</td>
+          <td><span class="badge bg-warning text-dark">${s.Cantidad}</span></td>
+          <td>${new Date(s.FechaSalida).toLocaleString("es-GT")}</td>
+        </tr>`).join("");
+}
+
 async function consultarJoin(tipo) {
-  const res   = await fetch(`${API_REP}/${tipo}-join`);
+  const res   = await fetch(`${API_REP}/${tipo}-join`, { headers: authHeaders() });
   const datos = await res.json();
   const tbody = document.getElementById("tabla-join");
   const thead = document.getElementById("thead-join");
@@ -59,7 +82,7 @@ async function consultarJoin(tipo) {
     return;
   }
 
-  // Encabezados dinámicos
+  // Encabezados dinámicos (igual que el original)
   thead.innerHTML = `<tr>${Object.keys(datos[0]).map(k =>
     `<th>${k.replace(/_/g, " ").toUpperCase()}</th>`).join("")}</tr>`;
 
@@ -70,15 +93,14 @@ async function consultarJoin(tipo) {
 }
 
 async function cargarGrafico() {
-  const res   = await fetch(`${API_REP}/grafico-proveedores`);
+  const res   = await fetch(`${API_REP}/grafico-proveedores`, { headers: authHeaders() });
   const datos = await res.json();
 
   if (datos.length === 0) return alert("No hay datos para el gráfico.");
 
-  const labels = datos.map(d => d.nombre_proveedor);
-  const values = datos.map(d => d.total_suministrado);
-  const colores = labels.map((_, i) =>
-    `hsl(${(i * 60) % 360}, 70%, 55%)`);
+  const labels  = datos.map(d => d.nombre_proveedor);
+  const values  = datos.map(d => d.total_suministrado);
+  const colores = labels.map((_, i) => `hsl(${(i * 60) % 360}, 70%, 55%)`);
 
   if (graficoInstancia) graficoInstancia.destroy();
 

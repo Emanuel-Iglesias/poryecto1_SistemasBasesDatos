@@ -1,11 +1,13 @@
+// backend/routes/reportes.js
 const express = require("express");
 const router  = express.Router();
 const { sql, poolPromise } = require("../config/db");
 const ExcelJS = require("exceljs");
 const PDFDocument = require("pdfkit");
+const verificarToken = require("../middleware/authMiddleware");
 
 // ── Stock bajo ──────────────────────────────────────────────
-router.get("/stock-bajo", async (req, res) => {
+router.get("/stock-bajo", verificarToken, async (req, res) => {
   const limite = parseInt(req.query.limite) || 10;
   try {
     const pool = await poolPromise;
@@ -18,8 +20,8 @@ router.get("/stock-bajo", async (req, res) => {
   }
 });
 
-// ── Por fecha ───────────────────────────────────────────────
-router.get("/por-fecha", async (req, res) => {
+// ── Por fecha (productos ingresados) ───────────────────────────────────────
+router.get("/por-fecha", verificarToken, async (req, res) => {
   const { desde, hasta } = req.query;
   if (!desde || !hasta)
     return res.status(400).json({ error: "Parámetros desde y hasta son requeridos" });
@@ -37,8 +39,30 @@ router.get("/por-fecha", async (req, res) => {
   }
 });
 
+// ── NUEVO: Salidas por rango de fechas (Módulo 8) ────────────────────────────
+router.get("/salidas-por-fecha", verificarToken, async (req, res) => {
+  const { desde, hasta } = req.query;
+  if (!desde || !hasta)
+    return res.status(400).json({ error: "Parámetros desde y hasta son requeridos" });
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input("desde", sql.DateTime, new Date(desde))
+      .input("hasta", sql.DateTime, new Date(hasta + "T23:59:59"))
+      .query(`SELECT s.IdSalida, p.id_producto, p.nombre_producto,
+                     s.Cantidad, s.FechaSalida
+              FROM tb_salida_productos s
+              INNER JOIN tb_productos p ON s.IdProducto = p.id_producto
+              WHERE s.FechaSalida BETWEEN @desde AND @hasta
+              ORDER BY s.FechaSalida DESC`);
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── INNER JOIN ──────────────────────────────────────────────
-router.get("/inner-join", async (req, res) => {
+router.get("/inner-join", verificarToken, async (req, res) => {
   try {
     const pool = await poolPromise;
     const result = await pool.request().query(`
@@ -53,7 +77,7 @@ router.get("/inner-join", async (req, res) => {
 });
 
 // ── LEFT JOIN ───────────────────────────────────────────────
-router.get("/left-join", async (req, res) => {
+router.get("/left-join", verificarToken, async (req, res) => {
   try {
     const pool = await poolPromise;
     const result = await pool.request().query(`
@@ -68,7 +92,7 @@ router.get("/left-join", async (req, res) => {
 });
 
 // ── RIGHT JOIN ──────────────────────────────────────────────
-router.get("/right-join", async (req, res) => {
+router.get("/right-join", verificarToken, async (req, res) => {
   try {
     const pool = await poolPromise;
     const result = await pool.request().query(`
@@ -83,7 +107,7 @@ router.get("/right-join", async (req, res) => {
 });
 
 // ── Gráfico ─────────────────────────────────────────────────
-router.get("/grafico-proveedores", async (req, res) => {
+router.get("/grafico-proveedores", verificarToken, async (req, res) => {
   try {
     const pool = await poolPromise;
     const result = await pool.request().query(`
@@ -98,7 +122,7 @@ router.get("/grafico-proveedores", async (req, res) => {
 });
 
 // ── EXPORTAR EXCEL ──────────────────────────────────────────
-router.get("/exportar-excel", async (req, res) => {
+router.get("/exportar-excel", verificarToken, async (req, res) => {
   try {
     const pool = await poolPromise;
     const productos    = await pool.request().query("SELECT * FROM tb_productos ORDER BY nombre_producto");
@@ -221,7 +245,7 @@ router.get("/exportar-excel", async (req, res) => {
 });
 
 // ── EXPORTAR PDF ────────────────────────────────────────────
-router.get("/exportar-pdf", async (req, res) => {
+router.get("/exportar-pdf", verificarToken, async (req, res) => {
   try {
     const pool = await poolPromise;
     const productos    = await pool.request().query("SELECT * FROM tb_productos ORDER BY nombre_producto");
@@ -242,7 +266,6 @@ router.get("/exportar-pdf", async (req, res) => {
     res.setHeader("Content-Disposition", `attachment; filename=reporte_${new Date().toISOString().slice(0,10)}.pdf`);
     doc.pipe(res);
 
-    // ── Función helpers ──
     const titulo = (texto, color = "#0f3460") => {
       doc.moveDown(0.5)
          .fontSize(14).fillColor(color).font("Helvetica-Bold")
@@ -275,7 +298,7 @@ router.get("/exportar-pdf", async (req, res) => {
       doc.y = y + 14;
     };
 
-    // ── Portada ──
+    // Portada
     doc.rect(0, 0, 612, 100).fill("#0f3460");
     doc.fontSize(22).fillColor("#ffffff").font("Helvetica-Bold")
        .text("Reporte General del Sistema", 40, 30, { align: "center" });
@@ -283,7 +306,7 @@ router.get("/exportar-pdf", async (req, res) => {
        .text(`Generado el ${fecha}`, 40, 62, { align: "center" });
     doc.moveDown(2);
 
-    // ── Sección 1: Productos ──
+    // Sección 1: Productos
     titulo("1. Productos");
     const colsProd = [
       { label: "ID",            w: 35  },
@@ -304,7 +327,7 @@ router.get("/exportar-pdf", async (req, res) => {
       if (doc.y > 720) { doc.addPage(); }
     });
 
-    // ── Sección 2: Proveedores ──
+    // Sección 2: Proveedores
     doc.addPage();
     titulo("2. Proveedores");
     const colsProv = [
@@ -326,7 +349,7 @@ router.get("/exportar-pdf", async (req, res) => {
       if (doc.y > 720) { doc.addPage(); }
     });
 
-    // ── Sección 3: Distribución ──
+    // Sección 3: Distribución
     doc.addPage();
     titulo("3. Distribución Producto-Proveedor");
     const colsDist = [
@@ -344,7 +367,7 @@ router.get("/exportar-pdf", async (req, res) => {
       if (doc.y > 720) { doc.addPage(); }
     });
 
-    // ── Sección 4: Stock Bajo ──
+    // Sección 4: Stock Bajo
     doc.addPage();
     titulo("4. Productos con Stock Bajo (< 10)", "#cc0000");
     const colsStock = [
