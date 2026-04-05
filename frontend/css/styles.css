@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* { box-sizing: border-box; }
+
+body {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  color: #e0e0e0;
+}
+
+/* Navbar */
+.navbar {
+  background: rgba(255,255,255,0.05) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  box-shadow: none;
+}
+.navbar-brand, .navbar .text-dark { color: #fff !important; }
+
+/* Cards del menú principal */
+.card-menu {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  transition: transform 0.25s, box-shadow 0.25s, background 0.25s;
+  cursor: pointer;
+  color: #fff;
+}
+.card-menu:hover {
+  transform: translateY(-8px);
+  background: rgba(255,255,255,0.14);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4) !important;
+}
+.card-menu h5 { color: #fff; }
+.card-menu p  { color: rgba(255,255,255,0.6); }
+
+/* Cards normales */
+.card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+  color: #e0e0e0;
+}
+.card-header {
+  border-radius: 16px 16px 0 0 !important;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.08) !important;
+  color: #fff !important;
+}
+.card-header.bg-white {
+  background: rgba(255,255,255,0.08) !important;
+  color: #fff !important;
+}
+
+/* Tablas */
+.table { color: #ddd; }
+.table thead th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.08) !important;
+  color: #fff !important;
+}
+.table tbody tr:hover { background: rgba(255,255,255,0.06); }
+.table td { border-color: rgba(255,255,255,0.07); vertical-align: middle; }
+.table-primary, .table-success, .table-warning, .table-danger {
+  background: rgba(255,255,255,0.1) !important;
+  color: #fff !important;
+}
+
+/* Formularios */
+.form-control, .form-select {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  border-radius: 10px;
+}
+.form-control:focus, .form-select:focus {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.4);
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.08);
+}
+.form-control::placeholder { color: rgba(255,255,255,0.35); }
+.form-label { color: rgba(255,255,255,0.75); font-size: 0.88rem; font-weight: 500; }
+.form-select option { background: #1a1a2e; color: #fff; }
+
+/* Botones */
+.btn { border-radius: 10px; font-weight: 500; }
+.btn-outline-light { border-color: rgba(255,255,255,0.4); color: #fff; }
+.btn-outline-light:hover { background: rgba(255,255,255,0.15); }
+
+/* Títulos */
+h2.fw-bold { color: #fff; }
+.text-muted { color: rgba(255,255,255,0.5) !important; }

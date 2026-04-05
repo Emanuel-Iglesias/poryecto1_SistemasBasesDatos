@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reportes</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="../css/styles.css" rel="stylesheet">
+</head>
+<body>
+
+  <nav class="navbar navbar-dark px-4 py-3 d-flex align-items-center">
+    <a href="index.html" class="btn btn-outline-light btn-sm me-3">
+      <i class="bi bi-arrow-left"></i> Volver
+    </a>
+    <span class="navbar-brand fw-bold me-auto">
+      <i class="bi bi-graph-up-arrow"></i> Reportes y Consultas
+    </span>
+    <div class="d-flex gap-2">
+      <a href="http://localhost:3000/api/reportes/exportar-excel" class="btn btn-success btn-sm">
+        <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+      </a>
+      <a href="http://localhost:3000/api/reportes/exportar-pdf" class="btn btn-danger btn-sm">
+        <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+      </a>
+    </div>
+  </nav>
+
+  <div class="container py-4">
+
+    <!-- Stock bajo -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header fw-bold">
+        <i class="bi bi-exclamation-triangle-fill text-warning"></i> Productos con Stock Bajo
+      </div>
+      <div class="card-body">
+        <div class="d-flex gap-2 align-items-end mb-3">
+          <div>
+            <label class="form-label">Stock menor a:</label>
+            <input type="number" id="limite_stock" class="form-control" value="10" min="1" style="width:120px">
+          </div>
+          <button onclick="consultarStockBajo()" class="btn btn-warning fw-bold">
+            <i class="bi bi-search"></i> Consultar
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Nombre</th><th>Precio</th><th>Stock</th><th>Fecha Ingreso</th></tr></thead>
+            <tbody id="tabla-stock-bajo">
+              <tr><td colspan="4" class="text-center text-muted py-3">Presiona Consultar para ver resultados</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Por fecha -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header fw-bold">
+        <i class="bi bi-calendar-range text-info"></i> Productos por Rango de Fechas
+      </div>
+      <div class="card-body">
+        <div class="d-flex gap-2 align-items-end mb-3 flex-wrap">
+          <div>
+            <label class="form-label">Desde:</label>
+            <input type="datetime-local" id="fecha_desde" class="form-control">
+          </div>
+          <div>
+            <label class="form-label">Hasta:</label>
+            <input type="datetime-local" id="fecha_hasta" class="form-control">
+          </div>
+          <button onclick="consultarPorFecha()" class="btn btn-info fw-bold text-white">
+            <i class="bi bi-search"></i> Consultar
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr><th>Nombre</th><th>Precio</th><th>Stock</th><th>Fecha Ingreso</th></tr></thead>
+            <tbody id="tabla-por-fecha">
+              <tr><td colspan="4" class="text-center text-muted py-3">Selecciona un rango de fechas</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Joins -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header fw-bold">
+        <i class="bi bi-intersect text-primary"></i> Consultas JOIN
+      </div>
+      <div class="card-body">
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+          <button onclick="consultarJoin('inner')" class="btn btn-primary">
+            <i class="bi bi-circle-fill"></i> INNER JOIN
+          </button>
+          <button onclick="consultarJoin('left')" class="btn btn-outline-primary">
+            <i class="bi bi-circle-half"></i> LEFT JOIN
+          </button>
+          <button onclick="consultarJoin('right')" class="btn btn-outline-primary">
+            <i class="bi bi-circle-half"></i> RIGHT JOIN
+          </button>
+        </div>
+        <p id="descripcion-join" class="text-muted small fst-italic"></p>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead id="thead-join"></thead>
+            <tbody id="tabla-join">
+              <tr><td class="text-center text-muted py-3">Selecciona un tipo de JOIN</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfico -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header fw-bold">
+        <i class="bi bi-bar-chart-fill text-success"></i> Gráfico — Productos Suministrados por Proveedor
+      </div>
+      <div class="card-body text-center">
+        <button onclick="cargarGrafico()" class="btn btn-success mb-4">
+          <i class="bi bi-bar-chart-line"></i> Generar Gráfico
+        </button>
+        <div style="max-width:700px; margin:0 auto;">
+          <canvas id="grafico-proveedores"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="../js/reportes.js"></script>
+</body>
+</html>
