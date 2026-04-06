@@ -1,10 +1,11 @@
-// productos.js — authHeaders() viene de auth.js (cargado antes en el HTML)
-const API = "http://localhost:3000/api/productos";
+// productos.js — authHeaders() y API vienen de auth.js
+// IMPORTANTE: usamos API_PROD para no chocar con la const API de auth.js
+const API_PROD = "http://localhost:3000/api/productos";
 
 async function cargarProductos() {
-  const res = await fetch(API, { headers: authHeaders() });
+  const res      = await fetch(API_PROD, { headers: authHeaders() });
   const productos = await res.json();
-  const tbody = document.getElementById("tabla-productos");
+  const tbody    = document.getElementById("tabla-productos");
 
   if (!productos.length) {
     tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">No hay productos registrados</td></tr>`;
@@ -43,14 +44,14 @@ async function guardarProducto() {
   const desc   = document.getElementById("descripcion").value.trim();
   const msgDiv = document.getElementById("msg-producto");
 
-  if (!nombre)                    return mostrarMensaje(msgDiv, "El nombre del producto es obligatorio.", "danger");
+  if (!nombre)                      return mostrarMensaje(msgDiv, "El nombre del producto es obligatorio.", "danger");
   if (isNaN(precio) || precio <= 0) return mostrarMensaje(msgDiv, "El precio debe ser un número positivo.", "danger");
   if (isNaN(stock)  || stock  < 0)  return mostrarMensaje(msgDiv, "El stock debe ser un número positivo.", "danger");
 
   const body = { nombre_producto: nombre, descripcion: desc, precio, stock };
 
   try {
-    const res = await fetch(id ? `${API}/${id}` : API, {
+    const res = await fetch(id ? `${API_PROD}/${id}` : API_PROD, {
       method:  id ? "PUT" : "POST",
       headers: authHeaders(),
       body:    JSON.stringify(body)
@@ -66,7 +67,7 @@ async function guardarProducto() {
 }
 
 async function editarProducto(id) {
-  const res = await fetch(`${API}/${id}`, { headers: authHeaders() });
+  const res = await fetch(`${API_PROD}/${id}`, { headers: authHeaders() });
   const p   = await res.json();
 
   document.getElementById("id_producto").value       = p.id_producto;
@@ -82,7 +83,7 @@ async function editarProducto(id) {
 async function eliminarProducto(id) {
   if (!confirm("¿Seguro que deseas eliminar este producto? También se eliminarán sus distribuciones.")) return;
   try {
-    const res  = await fetch(`${API}/${id}`, { method: "DELETE", headers: authHeaders() });
+    const res  = await fetch(`${API_PROD}/${id}`, { method: "DELETE", headers: authHeaders() });
     const data = await res.json();
     alert(data.mensaje || data.error);
     cargarProductos();

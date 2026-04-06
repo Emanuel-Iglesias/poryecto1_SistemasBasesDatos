@@ -1,8 +1,9 @@
-// proveedores.js — authHeaders() viene de auth.js (cargado antes en el HTML)
-const API = "http://localhost:3000/api/proveedores";
+// proveedores.js — authHeaders() y API vienen de auth.js
+// IMPORTANTE: usamos API_PROV para no chocar con la const API de auth.js
+const API_PROV = "http://localhost:3000/api/proveedores";
 
 async function cargarProveedores() {
-  const res         = await fetch(API, { headers: authHeaders() });
+  const res         = await fetch(API_PROV, { headers: authHeaders() });
   const proveedores = await res.json();
   const tbody       = document.getElementById("tabla-proveedores");
 
@@ -43,7 +44,7 @@ async function guardarProveedor() {
   const body = { nombre_proveedor: nombre, telefono: tel, correo_electronico: correo, direccion: dir };
 
   try {
-    const res = await fetch(id ? `${API}/${id}` : API, {
+    const res = await fetch(id ? `${API_PROV}/${id}` : API_PROV, {
       method:  id ? "PUT" : "POST",
       headers: authHeaders(),
       body:    JSON.stringify(body)
@@ -59,7 +60,7 @@ async function guardarProveedor() {
 }
 
 async function editarProveedor(id) {
-  const res = await fetch(`${API}/${id}`, { headers: authHeaders() });
+  const res = await fetch(`${API_PROV}/${id}`, { headers: authHeaders() });
   const p   = await res.json();
 
   document.getElementById("id_proveedor").value       = p.id_proveedor;
@@ -75,7 +76,7 @@ async function editarProveedor(id) {
 async function eliminarProveedor(id) {
   if (!confirm("¿Seguro que deseas eliminar este proveedor? También se eliminarán sus distribuciones.")) return;
   try {
-    const res  = await fetch(`${API}/${id}`, { method: "DELETE", headers: authHeaders() });
+    const res  = await fetch(`${API_PROV}/${id}`, { method: "DELETE", headers: authHeaders() });
     const data = await res.json();
     alert(data.mensaje || data.error);
     cargarProveedores();
