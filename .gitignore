@@ -1,0 +1,18 @@
+# Variables de entorno - NUNCA subir al repositorio
+backend/.env
+.env
+
+# Dependencias - se reinstalan con npm install
+backend/node_modules/
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/settings.json
