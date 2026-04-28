@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clientes</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="../css/styles.css" rel="stylesheet">
+</head>
+<body>
+
+  <nav class="navbar navbar-dark bg-info px-4">
+    <a href="index.html" class="btn btn-outline-dark btn-sm me-3">
+      <i class="bi bi-arrow-left"></i> Volver
+    </a>
+    <span class="navbar-brand fw-bold text-dark"><i class="bi bi-people"></i> Gestión de Clientes</span>
+    <button class="btn btn-outline-dark btn-sm ms-auto" onclick="logout()">
+      <i class="bi bi-box-arrow-right me-1"></i>Salir
+    </button>
+  </nav>
+
+  <div class="container py-4">
+
+    <!-- Formulario -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-info text-dark fw-bold">
+        <i class="bi bi-plus-circle"></i> <span id="form-titulo">Nuevo Cliente</span>
+      </div>
+      <div class="card-body">
+        <input type="hidden" id="nit-original">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">NIT *</label>
+            <input type="text" id="inp-nit" class="form-control" placeholder="Ej: 123456789">
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">Nombre *</label>
+            <input type="text" id="inp-nombre" class="form-control" placeholder="Nombre completo">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Teléfono</label>
+            <input type="text" id="inp-telefono" class="form-control" placeholder="Ej: 5551234">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Correo</label>
+            <input type="email" id="inp-correo" class="form-control" placeholder="correo@ejemplo.com">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Dirección</label>
+            <input type="text" id="inp-direccion" class="form-control" placeholder="Dirección completa">
+          </div>
+        </div>
+        <div id="msg-form" class="mt-2"></div>
+        <div class="mt-3 d-flex gap-2">
+          <button onclick="guardarCliente()" class="btn btn-info fw-bold">
+            <i class="bi bi-save"></i> Guardar
+          </button>
+          <button onclick="limpiarFormulario()" class="btn btn-secondary">
+            <i class="bi bi-x-circle"></i> Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card shadow-sm">
+      <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-table"></i> Lista de Clientes <small class="text-muted">(MySQL)</small></span>
+        <button onclick="cargarClientes()" class="btn btn-outline-info btn-sm">
+          <i class="bi bi-arrow-clockwise"></i> Actualizar
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-info">
+              <tr>
+                <th>NIT</th><th>Nombre</th><th>Teléfono</th>
+                <th>Correo</th><th>Dirección</th><th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-clientes">
+              <tr><td colspan="6" class="text-center py-3">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    requireAuth();
+
+    async function cargarClientes() {
+      const res    = await fetch(`${API}/clientes`, { headers: authHeaders() });
+      const datos  = await res.json();
+      const tbody  = document.getElementById("tbody-clientes");
+      if (!datos.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No hay clientes registrados</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = datos.map(c => `
+        <tr>
+          <td><span class="badge bg-secondary">${c.nit}</span></td>
+          <td>${c.nombre}</td>
+          <td>${c.telefono || "—"}</td>
+          <td>${c.correo   || "—"}</td>
+          <td>${c.direccion|| "—"}</td>
+          <td>
+            <button onclick="editarCliente('${c.nit}')" class="btn btn-sm btn-warning me-1">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button onclick="eliminarCliente('${c.nit}')" class="btn btn-sm btn-danger">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>`).join("");
+    }
+
+    async function guardarCliente() {
+      const nitOriginal = document.getElementById("nit-original").value;
+      const nit         = document.getElementById("inp-nit").value.trim();
+      const nombre      = document.getElementById("inp-nombre").value.trim();
+      const telefono    = document.getElementById("inp-telefono").value.trim();
+      const correo      = document.getElementById("inp-correo").value.trim();
+      const direccion   = document.getElementById("inp-direccion").value.trim();
+      const msgDiv      = document.getElementById("msg-form");
+
+      if (!nit || !nombre) return mostrarMensaje(msgDiv, "NIT y nombre son obligatorios.", "danger");
+
+      const body = { nit, nombre, telefono, correo, direccion };
+      const esEdicion = !!nitOriginal;
+      const url    = esEdicion ? `${API}/clientes/${nitOriginal}` : `${API}/clientes`;
+      const method = esEdicion ? "PUT" : "POST";
+
+      try {
+        const res  = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) return mostrarMensaje(msgDiv, data.error, "danger");
+        mostrarMensaje(msgDiv, data.mensaje, "success");
+        limpiarFormulario();
+        cargarClientes();
+      } catch {
+        mostrarMensaje(msgDiv, "Error al conectar con el servidor.", "danger");
+      }
+    }
+
+    async function editarCliente(nit) {
+      const res  = await fetch(`${API}/clientes/${nit}`, { headers: authHeaders() });
+      const data = await res.json();
+      document.getElementById("nit-original").value   = data.nit;
+      document.getElementById("inp-nit").value        = data.nit;
+      document.getElementById("inp-nombre").value     = data.nombre;
+      document.getElementById("inp-telefono").value   = data.telefono  || "";
+      document.getElementById("inp-correo").value     = data.correo    || "";
+      document.getElementById("inp-direccion").value  = data.direccion || "";
+      document.getElementById("form-titulo").textContent = "Editar Cliente";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function eliminarCliente(nit) {
+      if (!confirm("¿Eliminar este cliente?")) return;
+      const res  = await fetch(`${API}/clientes/${nit}`, { method: "DELETE", headers: authHeaders() });
+      const data = await res.json();
+      alert(data.mensaje || data.error);
+      cargarClientes();
+    }
+
+    function limpiarFormulario() {
+      ["nit-original","inp-nit","inp-nombre","inp-telefono","inp-correo","inp-direccion"]
+        .forEach(id => document.getElementById(id).value = "");
+      document.getElementById("form-titulo").textContent = "Nuevo Cliente";
+      document.getElementById("msg-form").innerHTML = "";
+    }
+
+    function mostrarMensaje(div, texto, tipo) {
+      div.innerHTML = `<div class="alert alert-${tipo} py-2 mb-0">${texto}</div>`;
+    }
+
+    cargarClientes();
+  </script>
+</body>
+</html>

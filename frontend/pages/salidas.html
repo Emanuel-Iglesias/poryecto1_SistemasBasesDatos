@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Salida de Productos</title>
+  <title>Ventas / Salidas</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link href="../css/styles.css" rel="stylesheet">
@@ -15,7 +15,7 @@
       <i class="bi bi-arrow-left"></i> Volver
     </a>
     <span class="navbar-brand fw-bold fs-4">
-      <i class="bi bi-arrow-down-circle"></i> Salida de Productos
+      <i class="bi bi-cart"></i> Ventas / Salidas
     </span>
     <div class="d-flex align-items-center gap-3">
       <span style="color:rgba(255,255,255,0.5); font-size:.9rem;" id="nav-usuario"></span>
@@ -26,16 +26,41 @@
   </nav>
 
   <div class="container py-4">
-
     <div class="row g-4">
 
       <!-- Formulario -->
       <div class="col-lg-4">
         <div class="card shadow-sm p-4">
-          <h5 class="fw-bold mb-3">Registrar Salida</h5>
+          <h5 class="fw-bold mb-3">Registrar Venta</h5>
 
+          <!-- NIT obligatorio -->
           <div class="mb-3">
-            <label class="form-label">Producto</label>
+            <label class="form-label">NIT del Cliente <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="text" id="inp-nit" class="form-control" placeholder="Ej: 123456789"/>
+              <button class="btn btn-outline-secondary" onclick="buscarCliente()" type="button">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+            <small class="text-muted">Ingresa el NIT y presiona <kbd>Enter</kbd> o el botón de búsqueda</small>
+          </div>
+
+          <!-- Datos del cliente -->
+          <div id="card-cliente" class="card mb-3 d-none border-success">
+            <div class="card-body py-2 px-3">
+              <p class="mb-1 small fw-bold text-success"><i class="bi bi-check-circle me-1"></i>Cliente verificado</p>
+              <p class="mb-1 small fw-bold" id="cli-nombre"></p>
+              <p class="mb-1 small text-muted" id="cli-direccion"></p>
+              <p class="mb-1 small text-muted" id="cli-telefono"></p>
+              <p class="mb-0 small text-muted" id="cli-correo"></p>
+            </div>
+          </div>
+
+          <div id="msg-cliente" class="alert d-none py-2 small mb-3"></div>
+
+          <!-- Producto -->
+          <div class="mb-3">
+            <label class="form-label">Producto <span class="text-danger">*</span></label>
             <select id="sel-producto" class="form-select">
               <option value="">Seleccionar...</option>
             </select>
@@ -46,14 +71,14 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Cantidad a retirar</label>
+            <label class="form-label">Cantidad <span class="text-danger">*</span></label>
             <input type="number" id="inp-cantidad" class="form-control" min="1" placeholder="0"/>
           </div>
 
           <div id="alerta-form" class="alert d-none mb-3"></div>
 
           <button class="btn btn-warning w-100 fw-semibold" onclick="registrarSalida()">
-            <i class="bi bi-arrow-down-circle me-1"></i>Registrar Salida
+            <i class="bi bi-cart-check me-1"></i>Registrar Venta
           </button>
         </div>
       </div>
@@ -62,7 +87,7 @@
       <div class="col-lg-8">
         <div class="card shadow-sm p-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="fw-bold mb-0">Historial de Salidas</h5>
+            <h5 class="fw-bold mb-0">Historial de Ventas</h5>
             <button class="btn btn-outline-secondary btn-sm" onclick="cargarSalidas()">
               <i class="bi bi-arrow-clockwise"></i> Actualizar
             </button>
@@ -71,15 +96,12 @@
             <table class="table table-hover align-middle">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Producto</th>
-                  <th>Cantidad</th>
-                  <th>Fecha</th>
-                  <th>Acción</th>
+                  <th>#</th><th>Producto</th><th>Cantidad</th>
+                  <th>NIT Cliente</th><th>Fecha</th><th>Acción</th>
                 </tr>
               </thead>
               <tbody id="tbody-salidas">
-                <tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>
+                <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
               </tbody>
             </table>
           </div>
@@ -97,17 +119,50 @@
     if (usr.NombreUsuario)
       document.getElementById("nav-usuario").textContent = "Hola, " + usr.NombreUsuario;
 
-    let productos = [];
+    let clienteVerificado = false;
+
+    async function buscarCliente() {
+      const nit   = document.getElementById("inp-nit").value.trim();
+      const msgEl = document.getElementById("msg-cliente");
+      const card  = document.getElementById("card-cliente");
+      clienteVerificado = false;
+      msgEl.className = "alert d-none py-2 small mb-3";
+      card.classList.add("d-none");
+      if (!nit) return;
+
+      try {
+        const res  = await fetch(`${API}/clientes/${nit}`, { headers: authHeaders() });
+        const data = await res.json();
+        if (!res.ok) {
+          msgEl.className = "alert alert-danger py-2 small mb-3";
+          msgEl.textContent = "❌ Cliente no encontrado. Regístralo en el módulo de Clientes.";
+          return;
+        }
+        document.getElementById("cli-nombre").textContent    = data.nombre;
+        document.getElementById("cli-direccion").textContent = "📍 " + (data.direccion || "—");
+        document.getElementById("cli-telefono").textContent  = "📞 " + (data.telefono  || "—");
+        document.getElementById("cli-correo").textContent    = "✉️ " + (data.correo    || "—");
+        card.classList.remove("d-none");
+        clienteVerificado = true;
+      } catch {
+        msgEl.className = "alert alert-danger py-2 small mb-3";
+        msgEl.textContent = "Error al conectar con el servidor.";
+      }
+    }
+
+    document.getElementById("inp-nit").addEventListener("keydown", e => {
+      if (e.key === "Enter") buscarCliente();
+    });
 
     async function cargarProductos() {
-      const res = await fetch(`${API}/productos`, { headers: authHeaders() });
-      productos  = await res.json();
-      const sel  = document.getElementById("sel-producto");
-      sel.innerHTML = '<option value="">Seleccionar...</option>';
+      const res       = await fetch(`${API}/productos`, { headers: authHeaders() });
+      const productos = await res.json();
+      const sel       = document.getElementById("sel-producto");
+      sel.innerHTML   = '<option value="">Seleccionar...</option>';
       productos.forEach(p => {
         const opt = document.createElement("option");
-        opt.value         = p.id_producto;
-        opt.textContent   = `${p.nombre_producto} (stock: ${p.stock})`;
+        opt.value = p.id_producto;
+        opt.textContent = `${p.nombre_producto} (stock: ${p.stock})`;
         opt.dataset.stock = p.stock;
         sel.appendChild(opt);
       });
@@ -128,7 +183,7 @@
       const data  = await res.json();
       const tbody = document.getElementById("tbody-salidas");
       if (!Array.isArray(data) || !data.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Sin registros</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Sin registros</td></tr>';
         return;
       }
       tbody.innerHTML = data.map(s => `
@@ -136,6 +191,7 @@
           <td>${s.IdSalida}</td>
           <td>${s.nombre_producto}</td>
           <td><span class="badge bg-warning text-dark">${s.Cantidad}</span></td>
+          <td><span class="badge bg-secondary">${s.NIT_Cliente || "—"}</span></td>
           <td>${new Date(s.FechaSalida).toLocaleString("es-GT")}</td>
           <td>
             <button class="btn btn-outline-danger btn-sm" onclick="eliminarSalida(${s.IdSalida})">
@@ -154,15 +210,18 @@
     }
 
     async function registrarSalida() {
+      const nit        = document.getElementById("inp-nit").value.trim();
       const IdProducto = document.getElementById("sel-producto").value;
       const Cantidad   = parseInt(document.getElementById("inp-cantidad").value);
+
+      if (!nit)                          return mostrarAlertaForm("Ingresa el NIT del cliente.");
+      if (!clienteVerificado)            return mostrarAlertaForm("Verifica el NIT del cliente antes de continuar.");
       if (!IdProducto || !Cantidad || Cantidad < 1)
         return mostrarAlertaForm("Selecciona un producto e ingresa una cantidad válida.");
 
       const res  = await fetch(`${API}/salidas`, {
-        method:  "POST",
-        headers: authHeaders(),
-        body:    JSON.stringify({ IdProducto: parseInt(IdProducto), Cantidad })
+        method: "POST", headers: authHeaders(),
+        body: JSON.stringify({ IdProducto: parseInt(IdProducto), Cantidad, NIT_Cliente: nit })
       });
       const data = await res.json();
       if (!res.ok) return mostrarAlertaForm(data.error);
@@ -170,7 +229,10 @@
       mostrarAlertaForm(data.mensaje, "success");
       document.getElementById("inp-cantidad").value = "";
       document.getElementById("sel-producto").value = "";
+      document.getElementById("inp-nit").value      = "";
       document.getElementById("info-stock").classList.add("d-none");
+      document.getElementById("card-cliente").classList.add("d-none");
+      clienteVerificado = false;
       await cargarProductos();
       await cargarSalidas();
     }
